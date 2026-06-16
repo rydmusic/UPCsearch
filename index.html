@@ -87,6 +87,11 @@
             stroke: #7E57C2; /* Minimal purple icon color */
             stroke-width: 2;
             fill: none;
+            transition: stroke 0.2s;
+        }
+        
+        .search-icon-btn:hover svg {
+            stroke: #4A148C;
         }
 
         /* Position results to appear below the search bar */
@@ -97,6 +102,7 @@
             transition: opacity 0.3s ease, margin-top 0.3s ease;
             opacity: 0;
             margin-top: -20px; /* Start results up, animate down */
+            padding-bottom: 40px; /* Space at the bottom so last card isn't cut off */
         }
 
         /* Show results, animate down and fade in */
@@ -113,6 +119,7 @@
             border-radius: 8px;
             box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.05);
             color: #4A148C;
+            margin-bottom: 15px; /* Spacing between multiple cards */
         }
 
         .record-card p {
@@ -126,11 +133,32 @@
             color: #6A1B9A;
         }
 
+        .label-link {
+            color: #7E57C2;
+            text-decoration: none;
+            font-weight: bold;
+            border-bottom: 1px dashed #7E57C2;
+            transition: color 0.2s, border-bottom 0.2s;
+        }
+
+        .label-link:hover {
+            color: #4A148C;
+            border-bottom: 1px solid #4A148C;
+        }
+
         .loading {
             color: #9575CD;
             font-style: italic;
             text-align: center;
             margin-top: 10px;
+        }
+        
+        .results-header {
+            text-align: center;
+            color: #4A148C;
+            font-size: 18px;
+            margin-bottom: 15px;
+            font-weight: bold;
         }
         
         hr {
@@ -155,10 +183,9 @@
     <div id="result"></div>
 
     <script>
-        // Your Google Sheet Details (No changes)
+        // Your Google Sheet Details
         const sheetId = '1g4DBoGER92FVA6ljLZTrTRuV2vuh-aUoA7ynj8H53x0';
         const sheetName = 'MASTER';
-        // This URL tells Google to export that specific sheet as a CSV file
         const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
 
         function handleKeyPress(e) {
@@ -167,16 +194,15 @@
             }
         }
 
+        // Standard UPC Search
         function searchUPC() {
             const upcVal = document.getElementById('upcInput').value.trim();
             const resultDiv = document.getElementById('result');
             
-            // Clear existing results and make invisible for animation
             resultDiv.innerHTML = '';
             resultDiv.classList.remove('visible');
 
             if (!upcVal) {
-                // Keep error message minimal and red-colored
                 resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">Please enter a UPC.</p>';
                 resultDiv.classList.add('visible');
                 return;
@@ -185,28 +211,22 @@
             resultDiv.innerHTML = '<p class="loading">Searching...</p>';
             resultDiv.classList.add('visible');
 
-            // Fetch and parse the Google Sheet CSV
             Papa.parse(csvUrl, {
                 download: true,
-                header: true, // Uses the first row (your headers) as object keys
+                header: true,
                 complete: function(results) {
                     const data = results.data;
-                    
-                    // Search for the exact UPC match in the 'UPC' column
                     const record = data.find(row => row['UPC'] === upcVal);
 
-                    // Clear loading text
                     resultDiv.innerHTML = '';
 
                     if (record) {
-                        // After successful search, shift the pill up to make room
                         document.querySelector('.search-wrapper').style.marginTop = '-100px'; 
-                        // Allow screen to scroll if results are tall
                         document.body.style.overflow = 'auto'; 
                         
-                        displayRecord(record, resultDiv);
+                        // Build and display single card
+                        resultDiv.innerHTML = buildRecordCard(record);
                     } else {
-                        // Keep 'not found' message minimal and red-colored
                         resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">UPC not found in the MASTER database.</p>';
                     }
                 },
@@ -216,24 +236,67 @@
             });
         }
 
-        function displayRecord(record, container) {
+        // New Label Search Function (Triggered by clicking the Label link)
+        function searchLabel(labelName) {
+            const resultDiv = document.getElementById('result');
+            
+            // Show loading state while transitioning to label view
+            resultDiv.innerHTML = `<p class="loading">Finding all releases for ${labelName}...</p>`;
+            
+            Papa.parse(csvUrl, {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    const data = results.data;
+                    
+                    // Find all rows where the Label matches the clicked label
+                    const records = data.filter(row => row['Label'] === labelName);
+
+                    resultDiv.innerHTML = '';
+
+                    if (records.length > 0) {
+                        // Add a subtle header so the user knows what they are looking at
+                        let html = `<div class="results-header">Upcoming Releases for ${labelName}</div>`;
+                        
+                        // Build a card for each matching release and stack them
+                        records.forEach(record => {
+                            html += buildRecordCard(record);
+                        });
+                        
+                        resultDiv.innerHTML = html;
+                    } else {
+                        resultDiv.innerHTML = `<p style="color:#B71C1C; text-align:center; margin-top:10px;">No other releases found for ${labelName}.</p>`;
+                    }
+                }
+            });
+        }
+
+        // Helper function to build the HTML for a single release card
+        function buildRecordCard(record) {
             let html = '<div class="record-card">';
             
-            // Basic Info (Minimal strong/label coloring)
+            html += `<p><strong>UPC:</strong> ${record['UPC'] || 'N/A'}</p>`;
             html += `<p><strong>Artist:</strong> ${record['Artist'] || 'N/A'}</p>`;
             html += `<p><strong>Title:</strong> ${record['Title'] || 'N/A'}</p>`;
             html += `<p><strong>Release Date:</strong> ${record['Release Date'] || 'N/A'}</p>`;
-            html += `<p><strong>Label:</strong> ${record['Label'] || 'N/A'}</p>`;
+            
+            // Format Label as a Clickable Link
+            if (record['Label']) {
+                // Escape single quotes just in case a label name has one (e.g., "O'Reilly Records")
+                let safeLabel = record['Label'].replace(/'/g, "\\'");
+                html += `<p><strong>Label:</strong> <a href="#" onclick="searchLabel('${safeLabel}'); return false;" class="label-link" title="Click to view all releases for this label">${record['Label']}</a></p>`;
+            } else {
+                html += `<p><strong>Label:</strong> N/A</p>`;
+            }
+            
             html += `<p><strong>Partners:</strong> ${record['Partners'] || 'N/A'}</p>`;
             
-            html += '<hr>'; // Subtle divider
+            html += '<hr>';
 
-            // Format Spotify URI & Link (Minimalized labels)
+            // Format Spotify
             if (record['Spotify']) {
                 let spotifyUri = record['Spotify'];
                 let spotifyUrl = spotifyUri;
-                
-                // Keep the URI for display, but format the URL for the link
                 if (spotifyUri.startsWith('spotify:')) {
                     spotifyUrl = spotifyUri.replace('spotify:', 'https://open.spotify.com/').replace(/:/g, '/');
                 }
@@ -241,13 +304,10 @@
                 html += `<p><strong>Spotify:</strong> <a href="${spotifyUrl}" target="_blank">Pre-release link</a></p>`;
             }
 
-            // Format Apple ID & Link
+            // Format Apple
             if (record['Apple']) {
                 let appleId = record['Apple'];
                 let appleUrl = appleId;
-                
-                // If the sheet just has the ID, format the link. 
-                // If it already has a link, try to pull the ID out for display.
                 if (!appleId.startsWith('http')) {
                     appleUrl = `https://music.apple.com/gb/album/${appleId}`;
                 } else {
@@ -257,40 +317,37 @@
                 html += `<p><strong>Apple:</strong> <a href="${appleUrl}" target="_blank">Pre-release link</a></p>`;
             }
 
-            // Format YouTube Link
+            // Format YouTube
             if (record['YouTube']) {
                 html += `<p><strong>YouTube:</strong> <a href="${record['YouTube']}" target="_blank">Pre-release link</a></p>`;
             }
 
-            // Format Amazon ASIN & Link
+            // Format Amazon
             if (record['Amazon']) {
                 let amazonUrl = record['Amazon'];
                 let asin = "";
-                
-                // Logic to extract ASIN from the Amazon URL
                 if (amazonUrl.includes('/dp/')) {
                     asin = amazonUrl.split('/dp/')[1].split('/')[0];
                 } else {
                     asin = amazonUrl.split('/').pop();
                 }
-                
                 html += `<p><strong>Amazon Album ASIN:</strong> ${asin}</p>`;
                 html += `<p><strong>Amazon:</strong> <a href="${amazonUrl}" target="_blank">Pre-release link</a></p>`;
             }
 
-            // Format Beatport Link
+            // Format Beatport
             if (record['Beatport']) {
                 html += `<p><strong>Beatport:</strong> <a href="${record['Beatport']}" target="_blank">Pre-release link</a></p>`;
             }
 
-            // Minimalist divider before warnings, if they exist
+            // Format WARNINGS
             if (record['WARNINGS']) {
                 html += '<hr>'; 
                 html += `<p style="color:#B71C1C;"><strong>Warnings:</strong> ${record['WARNINGS']}</p>`;
             }
             
             html += '</div>';
-            container.innerHTML = html;
+            return html;
         }
     </script>
 </body>
