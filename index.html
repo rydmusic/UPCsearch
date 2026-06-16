@@ -267,7 +267,7 @@
             // Fetch both the MASTER sheet and the Tracks sheet simultaneously
             Promise.all([
                 fetchSheetCSV('MASTER'),
-                fetchSheetCSV("Spotify Track URI's")
+                fetchSheetCSV('Track URI filtered')
             ]).then(([masterData, tracksData]) => {
                 const record = masterData.find(row => row['UPC'] === upcVal);
                 resultDiv.innerHTML = '';
@@ -293,7 +293,7 @@
             
             Promise.all([
                 fetchSheetCSV('MASTER'),
-                fetchSheetCSV("Spotify Track URI's")
+                fetchSheetCSV('Track URI filtered')
             ]).then(([masterData, tracksData]) => {
                 const records = masterData.filter(row => row['Label'] === labelName);
                 resultDiv.innerHTML = '';
@@ -340,7 +340,7 @@
             
             html += `<p><strong>Partners:</strong> ${record['Partners'] || 'N/A'}</p>`;
             
-            // --- NEW: Inject Spotify Tracks if they exist ---
+            // Inject Spotify Tracks if they exist
             if (allTracksData && upc !== 'N/A') {
                 // Filter tracks for this specific UPC
                 let albumTracks = allTracksData.filter(row => row['UPC'] === upc);
@@ -364,7 +364,6 @@
                     html += '</ul>';
                 }
             }
-            // -------------------------------------------------
 
             html += '<hr>';
 
