@@ -495,4 +495,68 @@
                         let trackUri = track['Track URI'] || 'No URI available';
                         
                         html += `<li>
-                                    <strong style="color: #
+                                    <strong style="color: #ffffff;">${trackNum}. ${trackTitle}</strong>
+                                    <span class="tracklist-uri">${trackUri}</span>
+                                 </li>`;
+                    });
+                    html += '</ul></details>';
+                }
+            }
+
+            html += `<div id="apple-tracks-${recordId}"></div>`;
+
+            html += '<hr>';
+
+            if (record['Spotify']) {
+                let spotifyUri = record['Spotify'];
+                let spotifyUrl = spotifyUri;
+                if (spotifyUri.startsWith('spotify:')) {
+                    spotifyUrl = spotifyUri.replace('spotify:', 'https://open.spotify.com/').replace(/:/g, '/');
+                }
+                html += `<p><strong>Spotify Album URI:</strong> ${spotifyUri}</p>`;
+                html += `<p><strong>Spotify:</strong> <a href="${spotifyUrl}" target="_blank">Pre-release link</a></p>`;
+            }
+
+            if (record['Apple']) {
+                let appleId = record['Apple'];
+                let appleUrl = appleId;
+                if (!appleId.startsWith('http')) {
+                    appleUrl = `https://music.apple.com/gb/album/${appleId}`;
+                } else {
+                    appleId = appleId.split('/').pop();
+                }
+                html += `<p><strong>Apple Album ID:</strong> ${appleId}</p>`;
+                html += `<p><strong>Apple:</strong> <a href="${appleUrl}" target="_blank">Pre-release link</a></p>`;
+            }
+
+            if (record['YouTube']) {
+                html += `<p><strong>YouTube:</strong> <a href="${record['YouTube']}" target="_blank">Pre-release link</a></p>`;
+            }
+
+            if (record['Amazon']) {
+                let amazonUrl = record['Amazon'];
+                let asin = "";
+                if (amazonUrl.includes('/dp/')) {
+                    asin = amazonUrl.split('/dp/')[1].split('/')[0];
+                } else {
+                    asin = amazonUrl.split('/').pop();
+                }
+                html += `<p><strong>Amazon Album ASIN:</strong> ${asin}</p>`;
+                html += `<p><strong>Amazon:</strong> <a href="${amazonUrl}" target="_blank">Pre-release link</a></p>`;
+            }
+
+            if (record['Beatport']) {
+                html += `<p><strong>Beatport:</strong> <a href="${record['Beatport']}" target="_blank">Pre-release link</a></p>`;
+            }
+
+            if (record['WARNINGS']) {
+                html += '<hr>'; 
+                html += `<p style="color:#ffcc00;"><strong>Warnings:</strong> ${record['WARNINGS']}</p>`;
+            }
+            
+            html += '</div></details>';
+            return html;
+        }
+    </script>
+</body>
+</html>
