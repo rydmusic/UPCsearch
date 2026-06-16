@@ -420,7 +420,7 @@
             
             html += `<p><strong>Partners:</strong> ${record['Partners'] || 'N/A'}</p>`;
 
-            // PREDICTED LINKFIRE LOGIC WITH MULTIPLE DOMAINS
+            // PREDICTED LINKFIRE LOGIC WITH MULTIPLE DOMAINS & EXTENDED MIX FILTER
             if (record['Label']) {
                 let labelName = record['Label'].trim();
                 
@@ -434,12 +434,16 @@
 
                 if (linkfireDomains[labelName]) {
                     let rawTitle = record['Title'] || '';
-                    // Strip out all spaces and non-alphanumeric characters
-                    let safeTitlePath = rawTitle.replace(/[^a-zA-Z0-9]/g, '');
-                    if (safeTitlePath) {
-                        let baseDomain = linkfireDomains[labelName];
-                        let predictedLink = `https://${baseDomain}/${safeTitlePath}`;
-                        html += `<p><strong>Linkfire:</strong> <a href="${predictedLink}" target="_blank">${predictedLink}</a></p>`;
+                    
+                    // Only generate the link if the title does NOT contain "Extended Mix"
+                    if (!rawTitle.toLowerCase().includes('extended mix')) {
+                        // Strip out all spaces and non-alphanumeric characters
+                        let safeTitlePath = rawTitle.replace(/[^a-zA-Z0-9]/g, '');
+                        if (safeTitlePath) {
+                            let baseDomain = linkfireDomains[labelName];
+                            let predictedLink = `https://${baseDomain}/${safeTitlePath}`;
+                            html += `<p><strong>Linkfire:</strong> <a href="${predictedLink}" target="_blank">${predictedLink}</a></p>`;
+                        }
                     }
                 }
             }
