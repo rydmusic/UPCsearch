@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UPC Search Database</title>
-    <!-- We use PapaParse to easily read the Google Sheet CSV format -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
         body {
@@ -68,6 +67,11 @@
             color: #666;
             font-style: italic;
         }
+        hr {
+            border: 0;
+            border-top: 1px solid #ccc;
+            margin: 15px 0;
+        }
     </style>
 </head>
 <body>
@@ -129,30 +133,42 @@
 
         function displayRecord(record, container) {
             let html = '<div class="record-card">';
+            
+            // Basic Info
             html += `<p><strong>Artist:</strong> ${record['Artist'] || 'N/A'}</p>`;
             html += `<p><strong>Title:</strong> ${record['Title'] || 'N/A'}</p>`;
             html += `<p><strong>Release Date:</strong> ${record['Release Date'] || 'N/A'}</p>`;
             html += `<p><strong>Label:</strong> ${record['Label'] || 'N/A'}</p>`;
             html += `<p><strong>Partners:</strong> ${record['Partners'] || 'N/A'}</p>`;
             
-            // Format Spotify Link
+            html += '<hr>'; // Adds a visual divider before the links
+
+            // Format Spotify URI & Link
             if (record['Spotify']) {
-                let spotifyUrl = record['Spotify'];
-                // Check if it's a URI format (e.g., spotify:album:xyz)
-                if (spotifyUrl.startsWith('spotify:')) {
-                    // Replaces 'spotify:' with the web domain, and any remaining ':' with '/'
-                    spotifyUrl = spotifyUrl.replace('spotify:', 'https://open.spotify.com/').replace(/:/g, '/');
+                let spotifyUri = record['Spotify'];
+                let spotifyUrl = spotifyUri;
+                
+                // Keep the URI for display, but format the URL for the link
+                if (spotifyUri.startsWith('spotify:')) {
+                    spotifyUrl = spotifyUri.replace('spotify:', 'https://open.spotify.com/').replace(/:/g, '/');
                 }
+                html += `<p><strong>Spotify URI:</strong> ${spotifyUri}</p>`;
                 html += `<p><strong>Spotify:</strong> <a href="${spotifyUrl}" target="_blank">Spotify pre-release link</a></p>`;
             }
 
-            // Format Apple Link
+            // Format Apple ID & Link
             if (record['Apple']) {
-                let appleUrl = record['Apple'];
-                // Check if it's just an ID and not already a link
-                if (!appleUrl.startsWith('http')) {
-                    appleUrl = `https://music.apple.com/gb/album/${appleUrl}`;
+                let appleId = record['Apple'];
+                let appleUrl = appleId;
+                
+                // If the sheet just has the ID, format the link. 
+                // If it already has a link, try to pull the ID out for display.
+                if (!appleId.startsWith('http')) {
+                    appleUrl = `https://music.apple.com/gb/album/${appleId}`;
+                } else {
+                    appleId = appleId.split('/').pop();
                 }
+                html += `<p><strong>Apple ID:</strong> ${appleId}</p>`;
                 html += `<p><strong>Apple:</strong> <a href="${appleUrl}" target="_blank">Apple pre-release link</a></p>`;
             }
 
@@ -161,15 +177,28 @@
                 html += `<p><strong>YouTube:</strong> <a href="${record['YouTube']}" target="_blank">YouTube pre-release link</a></p>`;
             }
 
-            // Format Amazon Link
+            // Format Amazon ASIN & Link
             if (record['Amazon']) {
-                html += `<p><strong>Amazon:</strong> <a href="${record['Amazon']}" target="_blank">Amazon pre-release link</a></p>`;
+                let amazonUrl = record['Amazon'];
+                let asin = "";
+                
+                // Logic to extract ASIN from the Amazon URL
+                if (amazonUrl.includes('/dp/')) {
+                    asin = amazonUrl.split('/dp/')[1].split('/')[0];
+                } else {
+                    asin = amazonUrl.split('/').pop();
+                }
+                
+                html += `<p><strong>Amazon ASIN:</strong> ${asin}</p>`;
+                html += `<p><strong>Amazon:</strong> <a href="${amazonUrl}" target="_blank">Amazon pre-release link</a></p>`;
             }
 
             // Format Beatport Link
             if (record['Beatport']) {
                 html += `<p><strong>Beatport:</strong> <a href="${record['Beatport']}" target="_blank">Beatport pre-release link</a></p>`;
             }
+
+            html += '<hr>'; // Adds a visual divider before warnings
 
             // Format Warnings
             if (record['WARNINGS']) {
