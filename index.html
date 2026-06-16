@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UPC Search Database</title>
+    <!-- We use PapaParse to easily read the Google Sheet CSV format -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
         body {
@@ -132,7 +133,6 @@
             html += `<p><strong>Title:</strong> ${record['Title'] || 'N/A'}</p>`;
             html += `<p><strong>Release Date:</strong> ${record['Release Date'] || 'N/A'}</p>`;
             html += `<p><strong>Label:</strong> ${record['Label'] || 'N/A'}</p>`;
-            html += `<p><strong>dBOM:</strong> ${record['dBOM'] || 'N/A'}</p>`;
             html += `<p><strong>Partners:</strong> ${record['Partners'] || 'N/A'}</p>`;
             
             // Format Spotify Link
@@ -143,7 +143,7 @@
                     // Replaces 'spotify:' with the web domain, and any remaining ':' with '/'
                     spotifyUrl = spotifyUrl.replace('spotify:', 'https://open.spotify.com/').replace(/:/g, '/');
                 }
-                html += `<p><strong>Spotify:</strong> <a href="${spotifyUrl}" target="_blank">Listen on Spotify</a></p>`;
+                html += `<p><strong>Spotify:</strong> <a href="${spotifyUrl}" target="_blank">Spotify pre-release link</a></p>`;
             }
 
             // Format Apple Link
@@ -153,9 +153,25 @@
                 if (!appleUrl.startsWith('http')) {
                     appleUrl = `https://music.apple.com/gb/album/${appleUrl}`;
                 }
-                html += `<p><strong>Apple:</strong> <a href="${appleUrl}" target="_blank">Listen on Apple Music</a></p>`;
+                html += `<p><strong>Apple:</strong> <a href="${appleUrl}" target="_blank">Apple pre-release link</a></p>`;
             }
 
+            // Format YouTube Link
+            if (record['YouTube']) {
+                html += `<p><strong>YouTube:</strong> <a href="${record['YouTube']}" target="_blank">YouTube pre-release link</a></p>`;
+            }
+
+            // Format Amazon Link
+            if (record['Amazon']) {
+                html += `<p><strong>Amazon:</strong> <a href="${record['Amazon']}" target="_blank">Amazon pre-release link</a></p>`;
+            }
+
+            // Format Beatport Link
+            if (record['Beatport']) {
+                html += `<p><strong>Beatport:</strong> <a href="${record['Beatport']}" target="_blank">Beatport pre-release link</a></p>`;
+            }
+
+            // Format Warnings
             if (record['WARNINGS']) {
                 html += `<p style="color:red;"><strong>Warnings:</strong> ${record['WARNINGS']}</p>`;
             }
