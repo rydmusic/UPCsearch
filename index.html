@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UPC Search</title>
-    <!-- We use PapaParse to easily read the Google Sheet CSV format -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
         body {
-            /* Minimal Calibri font with fallbacks */
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
             background-color: #B39DDB;
             color: #4A148C;
@@ -101,7 +99,6 @@
             margin-top: 0;
         }
 
-        /* Update to target the <details> tag */
         details.record-card {
             background: #F3E5F5;
             padding: 15px;
@@ -111,22 +108,19 @@
             margin-bottom: 15px;
         }
 
-        /* Styling for the collapsed header */
         .record-summary {
             cursor: pointer;
             font-weight: bold;
             color: #6A1B9A;
             outline: none;
-            list-style: none; /* Removes default arrow in modern browsers */
+            list-style: none; 
             font-size: 16px;
         }
         
-        /* Fallback to hide default arrow in webkit browsers */
         .record-summary::-webkit-details-marker {
             display: none;
         }
 
-        /* Custom minimal arrow */
         .record-summary::before {
             content: '▶';
             display: inline-block;
@@ -136,12 +130,10 @@
             transition: transform 0.2s ease;
         }
 
-        /* Rotate arrow when open */
         details[open] .record-summary::before {
             transform: rotate(90deg);
         }
 
-        /* Space inside the card when expanded */
         .record-expanded-content {
             margin-top: 15px;
             padding-top: 15px;
@@ -187,6 +179,28 @@
             font-weight: bold;
         }
         
+        .tracklist {
+            list-style-type: none;
+            padding-left: 0;
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+
+        .tracklist li {
+            margin-bottom: 8px;
+            background: #EDE7F6;
+            padding: 8px 12px;
+            border-radius: 4px;
+        }
+
+        .tracklist-uri {
+            font-size: 14px;
+            color: #7E57C2;
+            word-break: break-all;
+            display: block;
+            margin-top: 2px;
+        }
+
         hr {
             border: 0;
             border-top: 1px solid #E1BEE7;
@@ -210,8 +224,23 @@
 
     <script>
         const sheetId = '1g4DBoGER92FVA6ljLZTrTRuV2vuh-aUoA7ynj8H53x0';
-        const sheetName = 'MASTER';
-        const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
+        
+        // Helper function to fetch a specific sheet as a Promise
+        function fetchSheetCSV(sheetName) {
+            return new Promise((resolve, reject) => {
+                const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+                Papa.parse(url, {
+                    download: true,
+                    header: true,
+                    complete: function(results) {
+                        resolve(results.data);
+                    },
+                    error: function(err) {
+                        reject(err);
+                    }
+                });
+            });
+        }
 
         function handleKeyPress(e) {
             if (e.key === 'Enter') {
@@ -232,67 +261,61 @@
                 return;
             }
 
-            resultDiv.innerHTML = '<p class="loading">Searching...</p>';
+            resultDiv.innerHTML = '<p class="loading">Searching database and fetching tracks...</p>';
             resultDiv.classList.add('visible');
 
-            Papa.parse(csvUrl, {
-                download: true,
-                header: true,
-                complete: function(results) {
-                    const data = results.data;
-                    const record = data.find(row => row['UPC'] === upcVal);
+            // Fetch both the MASTER sheet and the Tracks sheet simultaneously
+            Promise.all([
+                fetchSheetCSV('MASTER'),
+                fetchSheetCSV("Spotify Track URI's")
+            ]).then(([masterData, tracksData]) => {
+                const record = masterData.find(row => row['UPC'] === upcVal);
+                resultDiv.innerHTML = '';
 
-                    resultDiv.innerHTML = '';
-
-                    if (record) {
-                        document.querySelector('.search-wrapper').style.marginTop = '-100px'; 
-                        document.body.style.overflow = 'auto'; 
-                        
-                        // Pass 'true' so the single UPC search is expanded by default
-                        resultDiv.innerHTML = buildRecordCard(record, true);
-                    } else {
-                        resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">UPC not found in the MASTER database.</p>';
-                    }
-                },
-                error: function(err) {
-                    resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">Error fetching data. Check sheet access.</p>';
+                if (record) {
+                    document.querySelector('.search-wrapper').style.marginTop = '-100px'; 
+                    document.body.style.overflow = 'auto'; 
+                    
+                    // Pass tracksData to the card builder
+                    resultDiv.innerHTML = buildRecordCard(record, true, tracksData);
+                } else {
+                    resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">UPC not found in the MASTER database.</p>';
                 }
+            }).catch(err => {
+                resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">Error fetching data. Check sheet access.</p>';
             });
         }
 
         function searchLabel(labelName) {
             const resultDiv = document.getElementById('result');
             
-            resultDiv.innerHTML = `<p class="loading">Finding all releases for ${labelName}...</p>`;
+            resultDiv.innerHTML = `<p class="loading">Finding all releases and tracks for ${labelName}...</p>`;
             
-            Papa.parse(csvUrl, {
-                download: true,
-                header: true,
-                complete: function(results) {
-                    const data = results.data;
-                    const records = data.filter(row => row['Label'] === labelName);
+            Promise.all([
+                fetchSheetCSV('MASTER'),
+                fetchSheetCSV("Spotify Track URI's")
+            ]).then(([masterData, tracksData]) => {
+                const records = masterData.filter(row => row['Label'] === labelName);
+                resultDiv.innerHTML = '';
 
-                    resultDiv.innerHTML = '';
-
-                    if (records.length > 0) {
-                        let html = `<div class="results-header">Upcoming Releases for ${labelName}</div>`;
-                        
-                        records.forEach(record => {
-                            // Pass 'false' so the label lists are collapsed by default
-                            html += buildRecordCard(record, false);
-                        });
-                        
-                        resultDiv.innerHTML = html;
-                    } else {
-                        resultDiv.innerHTML = `<p style="color:#B71C1C; text-align:center; margin-top:10px;">No other releases found for ${labelName}.</p>`;
-                    }
+                if (records.length > 0) {
+                    let html = `<div class="results-header">Upcoming Releases for ${labelName}</div>`;
+                    
+                    records.forEach(record => {
+                        html += buildRecordCard(record, false, tracksData);
+                    });
+                    
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<p style="color:#B71C1C; text-align:center; margin-top:10px;">No other releases found for ${labelName}.</p>`;
                 }
+            }).catch(err => {
+                resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">Error fetching data. Check sheet access.</p>';
             });
         }
 
-        // Updated Helper function using <details> and <summary>
-        function buildRecordCard(record, isExpanded) {
-            // If isExpanded is true, add the 'open' attribute
+        // Updated to accept the full tracksData array
+        function buildRecordCard(record, isExpanded, allTracksData) {
             let openAttr = isExpanded ? 'open' : '';
             let html = `<details class="record-card" ${openAttr}>`;
             
@@ -300,13 +323,9 @@
             let artist = record['Artist'] || 'N/A';
             let title = record['Title'] || 'N/A';
             
-            // The clickable collapsed state
             html += `<summary class="record-summary">${upc} / ${artist} / ${title}</summary>`;
-            
-            // The expanded content
             html += `<div class="record-expanded-content">`;
             
-            // We keep UPC, Artist, Title inside the expanded view for easy copying
             html += `<p><strong>UPC:</strong> ${upc}</p>`;
             html += `<p><strong>Artist:</strong> ${artist}</p>`;
             html += `<p><strong>Title:</strong> ${title}</p>`;
@@ -320,9 +339,35 @@
             }
             
             html += `<p><strong>Partners:</strong> ${record['Partners'] || 'N/A'}</p>`;
+            
+            // --- NEW: Inject Spotify Tracks if they exist ---
+            if (allTracksData && upc !== 'N/A') {
+                // Filter tracks for this specific UPC
+                let albumTracks = allTracksData.filter(row => row['UPC'] === upc);
+                
+                // Sort by Track Number sequentially
+                if (albumTracks.length > 0) {
+                    albumTracks.sort((a, b) => (parseInt(a['Track Number']) || 0) - (parseInt(b['Track Number']) || 0));
+                    
+                    html += '<hr><p><strong>Spotify Track URIs:</strong></p>';
+                    html += '<ul class="tracklist">';
+                    albumTracks.forEach(track => {
+                        let trackNum = track['Track Number'] || '-';
+                        let trackTitle = track['Track Title'] || 'Unknown Title';
+                        let trackUri = track['Track URI'] || 'No URI available';
+                        
+                        html += `<li>
+                                    <strong>${trackNum}. ${trackTitle}</strong>
+                                    <span class="tracklist-uri">${trackUri}</span>
+                                 </li>`;
+                    });
+                    html += '</ul>';
+                }
+            }
+            // -------------------------------------------------
+
             html += '<hr>';
 
-            // Format Spotify
             if (record['Spotify']) {
                 let spotifyUri = record['Spotify'];
                 let spotifyUrl = spotifyUri;
@@ -333,7 +378,6 @@
                 html += `<p><strong>Spotify:</strong> <a href="${spotifyUrl}" target="_blank">Pre-release link</a></p>`;
             }
 
-            // Format Apple
             if (record['Apple']) {
                 let appleId = record['Apple'];
                 let appleUrl = appleId;
@@ -346,12 +390,10 @@
                 html += `<p><strong>Apple:</strong> <a href="${appleUrl}" target="_blank">Pre-release link</a></p>`;
             }
 
-            // Format YouTube
             if (record['YouTube']) {
                 html += `<p><strong>YouTube:</strong> <a href="${record['YouTube']}" target="_blank">Pre-release link</a></p>`;
             }
 
-            // Format Amazon
             if (record['Amazon']) {
                 let amazonUrl = record['Amazon'];
                 let asin = "";
@@ -364,7 +406,6 @@
                 html += `<p><strong>Amazon:</strong> <a href="${amazonUrl}" target="_blank">Pre-release link</a></p>`;
             }
 
-            // Format Beatport
             if (record['Beatport']) {
                 html += `<p><strong>Beatport:</strong> <a href="${record['Beatport']}" target="_blank">Pre-release link</a></p>`;
             }
