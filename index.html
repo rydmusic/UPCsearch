@@ -13,10 +13,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            /* Using min-height and letting it scroll naturally fixes the cutoff bug */
             min-height: 100vh;
             margin: 0;
-            padding-bottom: 60px; /* Gives nice breathing room at the bottom of the page */
+            padding-bottom: 60px;
             box-sizing: border-box;
         }
         
@@ -24,12 +23,11 @@
             display: flex;
             justify-content: center;
             width: 100%;
-            margin-top: 35vh; /* Starts exactly where it needs to be */
+            margin-top: 35vh; 
             margin-bottom: 20px;
             transition: margin-top 0.4s ease-out;
         }
 
-        /* When a search happens, JS adds this class to smoothly push the bar to the top */
         .search-wrapper.active {
             margin-top: 40px; 
         }
@@ -144,6 +142,26 @@
             border-top: 1px dashed #E1BEE7;
         }
 
+        /* ARTWORK STYLES */
+        .artwork-container {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .artwork-img {
+            width: 100%;
+            max-width: 250px;
+            border-radius: 8px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            /* A tiny fade-in effect when the image loads */
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .record-card p {
             margin: 5px 0;
             line-height: 1.4;
@@ -183,7 +201,6 @@
             font-weight: bold;
         }
 
-        /* Tracks specific styling */
         details.tracks-details {
             margin-top: 15px;
             padding-top: 10px;
@@ -261,6 +278,33 @@
             document.getElementById('searchWrapper').classList.add('active');
         }
 
+        // NEW: Function to check if Apple link is live and pull artwork
+        function checkAppleArtwork(record) {
+            if (!record['Apple']) return;
+
+            let appleId = record['Apple'];
+            if (appleId.startsWith('http')) {
+                appleId = appleId.split('/').pop();
+            }
+
+            const upc = record['UPC'] || appleId;
+            const containerId = `artwork-${upc}`;
+            
+            // Ping the iTunes public lookup API
+            fetch(`https://itunes.apple.com/lookup?id=${appleId}`)
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById(containerId);
+                    // If resultCount > 0, the release is LIVE!
+                    if (data.resultCount > 0 && container) {
+                        // Get the image and up-res it from 100x100 to 600x600 for high quality
+                        let artworkUrl = data.results[0].artworkUrl100.replace('100x100bb', '600x600bb');
+                        container.innerHTML = `<img src="${artworkUrl}" alt="Album Artwork" class="artwork-img">`;
+                    }
+                })
+                .catch(e => console.log('Artwork not found or release not live yet.', e));
+        }
+
         function searchUPC() {
             const upcVal = document.getElementById('upcInput').value.trim();
             const resultDiv = document.getElementById('result');
@@ -287,6 +331,8 @@
                 if (record) {
                     triggerSearchAnimation();
                     resultDiv.innerHTML = buildRecordCard(record, true, tracksData);
+                    // Call the artwork checker right after the HTML is injected
+                    checkAppleArtwork(record);
                 } else {
                     resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">UPC not found in the MASTER database.</p>';
                 }
@@ -314,8 +360,11 @@
                         html += buildRecordCard(record, false, tracksData);
                     });
                     resultDiv.innerHTML = html;
+                    
+                    // Loop through again to ping artwork for all loaded cards
+                    records.forEach(record => checkAppleArtwork(record));
                 } else {
-                    resultDiv.innerHTML = `<p style="color:#B71C1C; text-align:center; margin-top:10px;">No other releases found for ${labelName}.</p>`;
+                    resultDiv.innerHTML = `<p style="color:#B71C1C; text-align:center; margin-top:10px;">No other releases found for ${labelName}.</p>';
                 }
             }).catch(err => {
                 resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">Error fetching data. Check sheet access.</p>';
@@ -329,9 +378,14 @@
             let upc = record['UPC'] || 'N/A';
             let artist = record['Artist'] || 'N/A';
             let title = record['Title'] || 'N/A';
+            let appleId = record['Apple'] || '';
+            let artworkId = upc !== 'N/A' ? upc : appleId;
             
             html += `<summary class="record-summary">${upc} / ${artist} / ${title}</summary>`;
             html += `<div class="record-expanded-content">`;
+            
+            // This empty div acts as a placeholder. The API will inject the image here if it finds it.
+            html += `<div id="artwork-${artworkId}" class="artwork-container"></div>`;
             
             html += `<p><strong>UPC:</strong> ${upc}</p>`;
             html += `<p><strong>Artist:</strong> ${artist}</p>`;
@@ -347,14 +401,12 @@
             
             html += `<p><strong>Partners:</strong> ${record['Partners'] || 'N/A'}</p>`;
             
-            // Inject Spotify Tracks as a Collapsible Section
             if (allTracksData && upc !== 'N/A') {
                 let albumTracks = allTracksData.filter(row => row['UPC'] === upc);
                 if (albumTracks.length > 0) {
                     albumTracks.sort((a, b) => (parseInt(a['Track Number']) || 0) - (parseInt(b['Track Number']) || 0));
                     
                     html += '<hr>';
-                    // Using a nested <details> tag for the track list
                     html += `<details class="tracks-details">`;
                     html += `<summary class="record-summary" style="color: #4A148C;">View Spotify Track URIs (${albumTracks.length})</summary>`;
                     html += '<ul class="tracklist">';
