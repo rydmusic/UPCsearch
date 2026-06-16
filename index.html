@@ -277,7 +277,6 @@
             document.getElementById('searchWrapper').classList.add('active');
         }
 
-        // UPDATED: Now fetches the album AND the tracks directly from Apple's API
         function checkAppleLiveStatus(record) {
             if (!record['Apple']) return;
 
@@ -290,12 +289,10 @@
             const artworkContainerId = `artwork-${upc}`;
             const appleTracksContainerId = `apple-tracks-${upc}`;
             
-            // Adding '&entity=song' tells the API to bring back the album AND track list
             fetch(`https://itunes.apple.com/lookup?id=${appleId}&entity=song`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.resultCount > 0) {
-                        // 1. Process Artwork (Wrapper Type: collection)
                         const albumData = data.results.find(item => item.wrapperType === 'collection');
                         const artworkContainer = document.getElementById(artworkContainerId);
                         
@@ -304,12 +301,10 @@
                             artworkContainer.innerHTML = `<img src="${artworkUrl}" alt="Album Artwork" class="artwork-img">`;
                         }
 
-                        // 2. Process Track IDs (Wrapper Type: track)
                         const tracksData = data.results.filter(item => item.wrapperType === 'track');
                         const tracksContainer = document.getElementById(appleTracksContainerId);
                         
                         if (tracksData.length > 0 && tracksContainer) {
-                            // Sort by track number to be perfectly sequential
                             tracksData.sort((a, b) => a.trackNumber - b.trackNumber);
                             
                             let html = '<hr>';
@@ -424,6 +419,17 @@
             }
             
             html += `<p><strong>Partners:</strong> ${record['Partners'] || 'N/A'}</p>`;
+
+            // PREDICTED LINKFIRE LOGIC
+            if (record['Label'] && record['Label'].trim() === 'When Stars Align') {
+                let rawTitle = record['Title'] || '';
+                // Strip out all spaces and non-alphanumeric characters
+                let safeTitlePath = rawTitle.replace(/[^a-zA-Z0-9]/g, '');
+                if (safeTitlePath) {
+                    let predictedLink = `https://whenstarsalign.lnk.to/${safeTitlePath}`;
+                    html += `<p><strong>Linkfire (Predicted):</strong> <a href="${predictedLink}" target="_blank">${predictedLink}</a></p>`;
+                }
+            }
             
             if (allTracksData && upc !== 'N/A') {
                 let albumTracks = allTracksData.filter(row => row['UPC'] === upc);
