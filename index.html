@@ -50,7 +50,7 @@
             width: 80%;
             max-width: 600px;
             height: 55px;
-            border-radius: 8px; /* Slightly squared off to match portal UI */
+            border-radius: 8px;
             background-color: rgba(25, 27, 38, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -61,7 +61,7 @@
         }
 
         .pill-search:focus-within {
-            border-color: #ff0066; /* Neon pink accent */
+            border-color: #ff0066;
         }
 
         input#upcInput {
@@ -274,7 +274,7 @@
 
     <div class="search-wrapper" id="searchWrapper">
         <div class="pill-search">
-            <input type="text" id="upcInput" placeholder="What release are you looking for?" onkeypress="handleKeyPress(event)">
+            <input type="text" id="upcInput" placeholder="Search by UPC" onkeypress="handleKeyPress(event)">
             <button class="search-icon-btn" onclick="searchUPC()">
                 <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </button>
@@ -455,7 +455,6 @@
             
             html += `<p><strong>Partners:</strong> ${record['Partners'] || 'N/A'}</p>`;
 
-            // PREDICTED LINKFIRE LOGIC WITH MULTIPLE DOMAINS & EXTENDED MIX FILTER
             if (record['Label']) {
                 let labelName = record['Label'].trim();
                 
@@ -547,11 +546,6 @@
 
             if (record['Beatport']) {
                 html += `<p><strong>Beatport:</strong> <a href="${record['Beatport']}" target="_blank">Pre-release link</a></p>`;
-            }
-
-            if (record['WARNINGS']) {
-                html += '<hr>'; 
-                html += `<p style="color:#ffcc00;"><strong>Warnings:</strong> ${record['WARNINGS']}</p>`;
             }
             
             html += '</div></details>';
