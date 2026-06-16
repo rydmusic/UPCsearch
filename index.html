@@ -7,7 +7,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            /* Changed font to Calibri */
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
             background-color: #f4f7f6;
             color: #333;
             display: flex;
@@ -61,7 +62,7 @@
         }
         .record-card strong {
             display: inline-block;
-            width: 120px;
+            width: 140px; /* Slightly widened to accommodate "Album ASIN" etc. */
         }
         .loading {
             color: #666;
@@ -152,8 +153,8 @@
                 if (spotifyUri.startsWith('spotify:')) {
                     spotifyUrl = spotifyUri.replace('spotify:', 'https://open.spotify.com/').replace(/:/g, '/');
                 }
-                html += `<p><strong>Spotify URI:</strong> ${spotifyUri}</p>`;
-                html += `<p><strong>Spotify:</strong> <a href="${spotifyUrl}" target="_blank">Spotify pre-release link</a></p>`;
+                html += `<p><strong>Spotify Album URI:</strong> ${spotifyUri}</p>`;
+                html += `<p><strong>Spotify:</strong> <a href="${spotifyUrl}" target="_blank">Spotify pre-release album link</a></p>`;
             }
 
             // Format Apple ID & Link
@@ -168,13 +169,13 @@
                 } else {
                     appleId = appleId.split('/').pop();
                 }
-                html += `<p><strong>Apple ID:</strong> ${appleId}</p>`;
-                html += `<p><strong>Apple:</strong> <a href="${appleUrl}" target="_blank">Apple pre-release link</a></p>`;
+                html += `<p><strong>Apple Album ID:</strong> ${appleId}</p>`;
+                html += `<p><strong>Apple:</strong> <a href="${appleUrl}" target="_blank">Apple pre-release album link</a></p>`;
             }
 
             // Format YouTube Link
             if (record['YouTube']) {
-                html += `<p><strong>YouTube:</strong> <a href="${record['YouTube']}" target="_blank">YouTube pre-release link</a></p>`;
+                html += `<p><strong>YouTube:</strong> <a href="${record['YouTube']}" target="_blank">YouTube pre-release album link</a></p>`;
             }
 
             // Format Amazon ASIN & Link
@@ -189,13 +190,13 @@
                     asin = amazonUrl.split('/').pop();
                 }
                 
-                html += `<p><strong>Amazon ASIN:</strong> ${asin}</p>`;
-                html += `<p><strong>Amazon:</strong> <a href="${amazonUrl}" target="_blank">Amazon pre-release link</a></p>`;
+                html += `<p><strong>Amazon Album ASIN:</strong> ${asin}</p>`;
+                html += `<p><strong>Amazon:</strong> <a href="${amazonUrl}" target="_blank">Amazon pre-release album link</a></p>`;
             }
 
             // Format Beatport Link
             if (record['Beatport']) {
-                html += `<p><strong>Beatport:</strong> <a href="${record['Beatport']}" target="_blank">Beatport pre-release link</a></p>`;
+                html += `<p><strong>Beatport:</strong> <a href="${record['Beatport']}" target="_blank">Beatport pre-release album link</a></p>`;
             }
 
             html += '<hr>'; // Adds a visual divider before warnings
