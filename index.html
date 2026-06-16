@@ -127,8 +127,6 @@
         }
 
         function displayRecord(record, container) {
-            // Build the HTML to display the found data
-            // Note: Make sure these keys exactly match your Google Sheet column headers
             let html = '<div class="record-card">';
             html += `<p><strong>Artist:</strong> ${record['Artist'] || 'N/A'}</p>`;
             html += `<p><strong>Title:</strong> ${record['Title'] || 'N/A'}</p>`;
@@ -137,10 +135,30 @@
             html += `<p><strong>dBOM:</strong> ${record['dBOM'] || 'N/A'}</p>`;
             html += `<p><strong>Partners:</strong> ${record['Partners'] || 'N/A'}</p>`;
             
-            // Add Links/Stores if they exist
-            if(record['Spotify']) html += `<p><strong>Spotify:</strong> <a href="${record['Spotify']}" target="_blank">Link</a></p>`;
-            if(record['Apple']) html += `<p><strong>Apple:</strong> <a href="${record['Apple']}" target="_blank">Link</a></p>`;
-            if(record['WARNINGS']) html += `<p style="color:red;"><strong>Warnings:</strong> ${record['WARNINGS']}</p>`;
+            // Format Spotify Link
+            if (record['Spotify']) {
+                let spotifyUrl = record['Spotify'];
+                // Check if it's a URI format (e.g., spotify:album:xyz)
+                if (spotifyUrl.startsWith('spotify:')) {
+                    // Replaces 'spotify:' with the web domain, and any remaining ':' with '/'
+                    spotifyUrl = spotifyUrl.replace('spotify:', 'https://open.spotify.com/').replace(/:/g, '/');
+                }
+                html += `<p><strong>Spotify:</strong> <a href="${spotifyUrl}" target="_blank">Listen on Spotify</a></p>`;
+            }
+
+            // Format Apple Link
+            if (record['Apple']) {
+                let appleUrl = record['Apple'];
+                // Check if it's just an ID and not already a link
+                if (!appleUrl.startsWith('http')) {
+                    appleUrl = `https://music.apple.com/gb/album/${appleUrl}`;
+                }
+                html += `<p><strong>Apple:</strong> <a href="${appleUrl}" target="_blank">Listen on Apple Music</a></p>`;
+            }
+
+            if (record['WARNINGS']) {
+                html += `<p style="color:red;"><strong>Warnings:</strong> ${record['WARNINGS']}</p>`;
+            }
             
             html += '</div>';
             container.innerHTML = html;
