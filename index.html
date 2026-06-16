@@ -3,91 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UPC Search Database</title>
+    <title>UPC Search</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
         body {
-            /* Changed font to Calibri */
+            /* Minimal Calibri font with fallbacks */
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
+            /* Light purple background from reference image */
+            background-color: #B39DDB;
+            color: #4A148C;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 50px 20px;
+            justify-content: center; /* Center everything vertically initially */
+            height: 100vh; /* Full screen height */
+            margin: 0;
+            overflow: hidden; /* Prevent scrolling during main view */
         }
-        .search-container {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            max-width: 500px;
+        
+        /* The container for the pill search bar */
+        .search-wrapper {
+            display: flex;
+            justify-content: center;
             width: 100%;
-            text-align: center;
+            margin-bottom: 20px; /* Space for results */
+            transition: margin-top 0.3s ease; /* Animate results coming in */
         }
-        input[type="text"] {
-            width: 80%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
+
+        /* The minimalist, soft pill-shaped search bar */
+        .pill-search {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 80%; /* Takes most of the width */
+            max-width: 600px; /* Caps the width like in reference */
+            height: 50px; /* Pill height */
+            border-radius: 25px; /* Perfect pill shape */
+            /* Off-white background from image */
+            background-color: #EDE7F6;
+            /* Neumorphic soft UI shadows: soft dark and soft light */
+            box-shadow: 7px 7px 15px rgba(0, 0, 0, 0.1), -7px -7px 15px rgba(255, 255, 255, 0.5);
+            padding: 0;
+            overflow: hidden;
             border: none;
-            border-radius: 4px;
+        }
+
+        /* Styling for the search input field within the pill */
+        input#upcInput {
+            flex-grow: 1; /* Input takes up the remaining space */
+            height: 100%;
+            border: none;
+            background: transparent;
+            outline: none; /* Remove blue focus border */
+            padding: 0 20px; /* Internal text padding */
+            font-size: 18px; /* Slightly larger for readability */
+            color: #4A148C;
+            letter-spacing: 0.5px;
+        }
+
+        /* Minimal placeholder text */
+        input#upcInput::placeholder {
+            color: #9E9E9E;
             font-size: 16px;
+        }
+
+        /* The clickable search icon SVG on the right */
+        .search-icon-btn {
+            background: transparent;
+            border: none;
+            padding: 0;
+            margin: 0;
             cursor: pointer;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            padding-right: 15px; /* Icon distance from edge */
         }
-        button:hover {
-            background-color: #0056b3;
+
+        /* Basic SVG styles for the minimal search icon */
+        .search-icon-btn svg {
+            width: 24px;
+            height: 24px;
+            stroke: #7E57C2; /* Minimal purple icon color */
+            stroke-width: 2;
+            fill: none;
         }
+
+        /* Position results to appear below the search bar */
         #result {
-            margin-top: 20px;
-            text-align: left;
             width: 100%;
+            max-width: 600px;
+            text-align: left;
+            transition: opacity 0.3s ease, margin-top 0.3s ease;
+            opacity: 0;
+            margin-top: -20px; /* Start results up, animate down */
         }
+
+        /* Show results, animate down and fade in */
+        #result.visible {
+            opacity: 1;
+            margin-top: 0;
+        }
+
+        /* Record display styles, also minimal */
         .record-card {
-            background: #e9ecef;
+            /* Slights softer result background */
+            background: #F3E5F5;
             padding: 15px;
-            border-radius: 4px;
-            margin-top: 10px;
+            border-radius: 8px;
+            box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.05);
+            color: #4A148C;
         }
+
         .record-card p {
             margin: 5px 0;
             line-height: 1.4;
         }
+
         .record-card strong {
             display: inline-block;
-            width: 140px; /* Slightly widened to accommodate "Album ASIN" etc. */
+            width: 160px; /* Clear label alignment */
+            color: #6A1B9A;
         }
+
         .loading {
-            color: #666;
+            color: #9575CD;
             font-style: italic;
+            text-align: center;
+            margin-top: 10px;
         }
+        
         hr {
             border: 0;
-            border-top: 1px solid #ccc;
+            border-top: 1px solid #E1BEE7;
             margin: 15px 0;
         }
+
     </style>
 </head>
 <body>
 
-    <div class="search-container">
-        <h2>Music Release UPC Search</h2>
-        <input type="text" id="upcInput" placeholder="Enter UPC here..." onkeypress="handleKeyPress(event)">
-        <br>
-        <button onclick="searchUPC()">Search</button>
-
-        <div id="result"></div>
+    <div class="search-wrapper">
+        <div class="pill-search">
+            <input type="text" id="upcInput" placeholder="Enter UPC..." onkeypress="handleKeyPress(event)">
+            <button class="search-icon-btn" onclick="searchUPC()">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </button>
+        </div>
     </div>
 
+    <div id="result"></div>
+
     <script>
-        // Your Google Sheet Details
+        // Your Google Sheet Details (No changes)
         const sheetId = '1g4DBoGER92FVA6ljLZTrTRuV2vuh-aUoA7ynj8H53x0';
         const sheetName = 'MASTER';
         // This URL tells Google to export that specific sheet as a CSV file
@@ -103,12 +171,19 @@
             const upcVal = document.getElementById('upcInput').value.trim();
             const resultDiv = document.getElementById('result');
             
+            // Clear existing results and make invisible for animation
+            resultDiv.innerHTML = '';
+            resultDiv.classList.remove('visible');
+
             if (!upcVal) {
-                resultDiv.innerHTML = '<p style="color:red;">Please enter a UPC.</p>';
+                // Keep error message minimal and red-colored
+                resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">Please enter a UPC.</p>';
+                resultDiv.classList.add('visible');
                 return;
             }
 
-            resultDiv.innerHTML = '<p class="loading">Searching database...</p>';
+            resultDiv.innerHTML = '<p class="loading">Searching...</p>';
+            resultDiv.classList.add('visible');
 
             // Fetch and parse the Google Sheet CSV
             Papa.parse(csvUrl, {
@@ -120,14 +195,23 @@
                     // Search for the exact UPC match in the 'UPC' column
                     const record = data.find(row => row['UPC'] === upcVal);
 
+                    // Clear loading text
+                    resultDiv.innerHTML = '';
+
                     if (record) {
+                        // After successful search, shift the pill up to make room
+                        document.querySelector('.search-wrapper').style.marginTop = '-100px'; 
+                        // Allow screen to scroll if results are tall
+                        document.body.style.overflow = 'auto'; 
+                        
                         displayRecord(record, resultDiv);
                     } else {
-                        resultDiv.innerHTML = '<p style="color:red;">UPC not found in the MASTER database.</p>';
+                        // Keep 'not found' message minimal and red-colored
+                        resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">UPC not found in the MASTER database.</p>';
                     }
                 },
                 error: function(err) {
-                    resultDiv.innerHTML = '<p style="color:red;">Error fetching data. Check if your Google Sheet is set to "Anyone with link can view".</p>';
+                    resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">Error fetching data. Check sheet access.</p>';
                 }
             });
         }
@@ -135,16 +219,16 @@
         function displayRecord(record, container) {
             let html = '<div class="record-card">';
             
-            // Basic Info
+            // Basic Info (Minimal strong/label coloring)
             html += `<p><strong>Artist:</strong> ${record['Artist'] || 'N/A'}</p>`;
             html += `<p><strong>Title:</strong> ${record['Title'] || 'N/A'}</p>`;
             html += `<p><strong>Release Date:</strong> ${record['Release Date'] || 'N/A'}</p>`;
             html += `<p><strong>Label:</strong> ${record['Label'] || 'N/A'}</p>`;
             html += `<p><strong>Partners:</strong> ${record['Partners'] || 'N/A'}</p>`;
             
-            html += '<hr>'; // Adds a visual divider before the links
+            html += '<hr>'; // Subtle divider
 
-            // Format Spotify URI & Link
+            // Format Spotify URI & Link (Minimalized labels)
             if (record['Spotify']) {
                 let spotifyUri = record['Spotify'];
                 let spotifyUrl = spotifyUri;
@@ -154,7 +238,7 @@
                     spotifyUrl = spotifyUri.replace('spotify:', 'https://open.spotify.com/').replace(/:/g, '/');
                 }
                 html += `<p><strong>Spotify Album URI:</strong> ${spotifyUri}</p>`;
-                html += `<p><strong>Spotify:</strong> <a href="${spotifyUrl}" target="_blank">Spotify pre-release album link</a></p>`;
+                html += `<p><strong>Spotify:</strong> <a href="${spotifyUrl}" target="_blank">Pre-release link</a></p>`;
             }
 
             // Format Apple ID & Link
@@ -170,12 +254,12 @@
                     appleId = appleId.split('/').pop();
                 }
                 html += `<p><strong>Apple Album ID:</strong> ${appleId}</p>`;
-                html += `<p><strong>Apple:</strong> <a href="${appleUrl}" target="_blank">Apple pre-release album link</a></p>`;
+                html += `<p><strong>Apple:</strong> <a href="${appleUrl}" target="_blank">Pre-release link</a></p>`;
             }
 
             // Format YouTube Link
             if (record['YouTube']) {
-                html += `<p><strong>YouTube:</strong> <a href="${record['YouTube']}" target="_blank">YouTube pre-release album link</a></p>`;
+                html += `<p><strong>YouTube:</strong> <a href="${record['YouTube']}" target="_blank">Pre-release link</a></p>`;
             }
 
             // Format Amazon ASIN & Link
@@ -191,19 +275,18 @@
                 }
                 
                 html += `<p><strong>Amazon Album ASIN:</strong> ${asin}</p>`;
-                html += `<p><strong>Amazon:</strong> <a href="${amazonUrl}" target="_blank">Amazon pre-release album link</a></p>`;
+                html += `<p><strong>Amazon:</strong> <a href="${amazonUrl}" target="_blank">Pre-release link</a></p>`;
             }
 
             // Format Beatport Link
             if (record['Beatport']) {
-                html += `<p><strong>Beatport:</strong> <a href="${record['Beatport']}" target="_blank">Beatport pre-release album link</a></p>`;
+                html += `<p><strong>Beatport:</strong> <a href="${record['Beatport']}" target="_blank">Pre-release link</a></p>`;
             }
 
-            html += '<hr>'; // Adds a visual divider before warnings
-
-            // Format Warnings
+            // Minimalist divider before warnings, if they exist
             if (record['WARNINGS']) {
-                html += `<p style="color:red;"><strong>Warnings:</strong> ${record['WARNINGS']}</p>`;
+                html += '<hr>'; 
+                html += `<p style="color:#B71C1C;"><strong>Warnings:</strong> ${record['WARNINGS']}</p>`;
             }
             
             html += '</div>';
