@@ -420,14 +420,27 @@
             
             html += `<p><strong>Partners:</strong> ${record['Partners'] || 'N/A'}</p>`;
 
-            // PREDICTED LINKFIRE LOGIC
-            if (record['Label'] && record['Label'].trim() === 'When Stars Align') {
-                let rawTitle = record['Title'] || '';
-                // Strip out all spaces and non-alphanumeric characters
-                let safeTitlePath = rawTitle.replace(/[^a-zA-Z0-9]/g, '');
-                if (safeTitlePath) {
-                    let predictedLink = `https://whenstarsalign.lnk.to/${safeTitlePath}`;
-                    html += `<p><strong>Linkfire (Predicted):</strong> <a href="${predictedLink}" target="_blank">${predictedLink}</a></p>`;
+            // PREDICTED LINKFIRE LOGIC WITH MULTIPLE DOMAINS
+            if (record['Label']) {
+                let labelName = record['Label'].trim();
+                
+                // Map of labels to their specific Linkfire domain
+                const linkfireDomains = {
+                    'When Stars Align': 'whenstarsalign.lnk.to',
+                    'Silver Lining Music': 'SilverLining.lnk.to',
+                    'Golden Path Recordings': 'GoldenPathRecs.lnk.to',
+                    'Golden Recordings': 'GoldenRecs.lnk.to'
+                };
+
+                if (linkfireDomains[labelName]) {
+                    let rawTitle = record['Title'] || '';
+                    // Strip out all spaces and non-alphanumeric characters
+                    let safeTitlePath = rawTitle.replace(/[^a-zA-Z0-9]/g, '');
+                    if (safeTitlePath) {
+                        let baseDomain = linkfireDomains[labelName];
+                        let predictedLink = `https://${baseDomain}/${safeTitlePath}`;
+                        html += `<p><strong>Linkfire:</strong> <a href="${predictedLink}" target="_blank">${predictedLink}</a></p>`;
+                    }
                 }
             }
             
