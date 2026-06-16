@@ -13,18 +13,25 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
+            /* Using min-height and letting it scroll naturally fixes the cutoff bug */
+            min-height: 100vh;
             margin: 0;
-            overflow: hidden;
+            padding-bottom: 60px; /* Gives nice breathing room at the bottom of the page */
+            box-sizing: border-box;
         }
         
         .search-wrapper {
             display: flex;
             justify-content: center;
             width: 100%;
+            margin-top: 35vh; /* Starts exactly where it needs to be */
             margin-bottom: 20px;
-            transition: margin-top 0.3s ease;
+            transition: margin-top 0.4s ease-out;
+        }
+
+        /* When a search happens, JS adds this class to smoothly push the bar to the top */
+        .search-wrapper.active {
+            margin-top: 40px; 
         }
 
         .pill-search {
@@ -88,15 +95,12 @@
             width: 100%;
             max-width: 600px;
             text-align: left;
-            transition: opacity 0.3s ease, margin-top 0.3s ease;
+            transition: opacity 0.3s ease;
             opacity: 0;
-            margin-top: -20px;
-            padding-bottom: 40px;
         }
 
         #result.visible {
             opacity: 1;
-            margin-top: 0;
         }
 
         details.record-card {
@@ -130,7 +134,7 @@
             transition: transform 0.2s ease;
         }
 
-        details[open] .record-summary::before {
+        details[open] > .record-summary::before {
             transform: rotate(90deg);
         }
 
@@ -178,12 +182,18 @@
             margin-bottom: 15px;
             font-weight: bold;
         }
+
+        /* Tracks specific styling */
+        details.tracks-details {
+            margin-top: 15px;
+            padding-top: 10px;
+        }
         
         .tracklist {
             list-style-type: none;
             padding-left: 0;
-            margin-top: 5px;
-            margin-bottom: 15px;
+            margin-top: 15px;
+            margin-bottom: 0;
         }
 
         .tracklist li {
@@ -211,7 +221,7 @@
 </head>
 <body>
 
-    <div class="search-wrapper">
+    <div class="search-wrapper" id="searchWrapper">
         <div class="pill-search">
             <input type="text" id="upcInput" placeholder="Enter UPC..." onkeypress="handleKeyPress(event)">
             <button class="search-icon-btn" onclick="searchUPC()">
@@ -225,7 +235,6 @@
     <script>
         const sheetId = '1g4DBoGER92FVA6ljLZTrTRuV2vuh-aUoA7ynj8H53x0';
         
-        // Helper function to fetch a specific sheet as a Promise
         function fetchSheetCSV(sheetName) {
             return new Promise((resolve, reject) => {
                 const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
@@ -248,6 +257,10 @@
             }
         }
 
+        function triggerSearchAnimation() {
+            document.getElementById('searchWrapper').classList.add('active');
+        }
+
         function searchUPC() {
             const upcVal = document.getElementById('upcInput').value.trim();
             const resultDiv = document.getElementById('result');
@@ -264,7 +277,6 @@
             resultDiv.innerHTML = '<p class="loading">Searching database and fetching tracks...</p>';
             resultDiv.classList.add('visible');
 
-            // Fetch both the MASTER sheet and the Tracks sheet simultaneously
             Promise.all([
                 fetchSheetCSV('MASTER'),
                 fetchSheetCSV('Track URI filtered')
@@ -273,10 +285,7 @@
                 resultDiv.innerHTML = '';
 
                 if (record) {
-                    document.querySelector('.search-wrapper').style.marginTop = '-100px'; 
-                    document.body.style.overflow = 'auto'; 
-                    
-                    // Pass tracksData to the card builder
+                    triggerSearchAnimation();
                     resultDiv.innerHTML = buildRecordCard(record, true, tracksData);
                 } else {
                     resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">UPC not found in the MASTER database.</p>';
@@ -290,7 +299,8 @@
             const resultDiv = document.getElementById('result');
             
             resultDiv.innerHTML = `<p class="loading">Finding all releases and tracks for ${labelName}...</p>`;
-            
+            triggerSearchAnimation();
+
             Promise.all([
                 fetchSheetCSV('MASTER'),
                 fetchSheetCSV('Track URI filtered')
@@ -300,11 +310,9 @@
 
                 if (records.length > 0) {
                     let html = `<div class="results-header">Upcoming Releases for ${labelName}</div>`;
-                    
                     records.forEach(record => {
                         html += buildRecordCard(record, false, tracksData);
                     });
-                    
                     resultDiv.innerHTML = html;
                 } else {
                     resultDiv.innerHTML = `<p style="color:#B71C1C; text-align:center; margin-top:10px;">No other releases found for ${labelName}.</p>`;
@@ -314,7 +322,6 @@
             });
         }
 
-        // Updated to accept the full tracksData array
         function buildRecordCard(record, isExpanded, allTracksData) {
             let openAttr = isExpanded ? 'open' : '';
             let html = `<details class="record-card" ${openAttr}>`;
@@ -340,16 +347,16 @@
             
             html += `<p><strong>Partners:</strong> ${record['Partners'] || 'N/A'}</p>`;
             
-            // Inject Spotify Tracks if they exist
+            // Inject Spotify Tracks as a Collapsible Section
             if (allTracksData && upc !== 'N/A') {
-                // Filter tracks for this specific UPC
                 let albumTracks = allTracksData.filter(row => row['UPC'] === upc);
-                
-                // Sort by Track Number sequentially
                 if (albumTracks.length > 0) {
                     albumTracks.sort((a, b) => (parseInt(a['Track Number']) || 0) - (parseInt(b['Track Number']) || 0));
                     
-                    html += '<hr><p><strong>Spotify Track URIs:</strong></p>';
+                    html += '<hr>';
+                    // Using a nested <details> tag for the track list
+                    html += `<details class="tracks-details">`;
+                    html += `<summary class="record-summary" style="color: #4A148C;">View Spotify Track URIs (${albumTracks.length})</summary>`;
                     html += '<ul class="tracklist">';
                     albumTracks.forEach(track => {
                         let trackNum = track['Track Number'] || '-';
@@ -361,7 +368,7 @@
                                     <span class="tracklist-uri">${trackUri}</span>
                                  </li>`;
                     });
-                    html += '</ul>';
+                    html += '</ul></details>';
                 }
             }
 
