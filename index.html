@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UPC Search</title>
+    <title>Label Release Portal</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
+        /* PORTAL THEME OVERHAUL */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
         body {
-            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
-            background-color: #B39DDB;
-            color: #4A148C;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #242c42 0%, #12131c 100%);
+            background-attachment: fixed;
+            color: #ffffff;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -19,11 +23,18 @@
             box-sizing: border-box;
         }
         
+        .header-logo {
+            margin-top: 40px;
+            height: 45px;
+            object-fit: contain;
+            transition: opacity 0.3s ease;
+        }
+
         .search-wrapper {
             display: flex;
             justify-content: center;
             width: 100%;
-            margin-top: 35vh; 
+            margin-top: 25vh; 
             margin-bottom: 20px;
             transition: margin-top 0.4s ease-out;
         }
@@ -38,13 +49,19 @@
             justify-content: center;
             width: 80%;
             max-width: 600px;
-            height: 50px;
-            border-radius: 25px;
-            background-color: #EDE7F6;
-            box-shadow: 7px 7px 15px rgba(0, 0, 0, 0.1), -7px -7px 15px rgba(255, 255, 255, 0.5);
+            height: 55px;
+            border-radius: 8px; /* Slightly squared off to match portal UI */
+            background-color: rgba(25, 27, 38, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             padding: 0;
             overflow: hidden;
-            border: none;
+            backdrop-filter: blur(10px);
+            transition: border-color 0.3s ease;
+        }
+
+        .pill-search:focus-within {
+            border-color: #ff0066; /* Neon pink accent */
         }
 
         input#upcInput {
@@ -54,14 +71,14 @@
             background: transparent;
             outline: none;
             padding: 0 20px;
-            font-size: 18px;
-            color: #4A148C;
+            font-size: 16px;
+            color: #ffffff;
             letter-spacing: 0.5px;
         }
 
         input#upcInput::placeholder {
-            color: #9E9E9E;
-            font-size: 16px;
+            color: #6b7280;
+            font-size: 15px;
         }
 
         .search-icon-btn {
@@ -74,24 +91,26 @@
             display: flex;
             align-items: center;
             padding-right: 15px;
+            padding-left: 10px;
         }
 
         .search-icon-btn svg {
-            width: 24px;
-            height: 24px;
-            stroke: #7E57C2;
-            stroke-width: 2;
+            width: 20px;
+            height: 20px;
+            stroke: #ff0066;
+            stroke-width: 2.5;
             fill: none;
-            transition: stroke 0.2s;
+            transition: stroke 0.2s, transform 0.2s;
         }
         
         .search-icon-btn:hover svg {
-            stroke: #4A148C;
+            stroke: #ff3385;
+            transform: scale(1.1);
         }
 
         #result {
             width: 100%;
-            max-width: 600px;
+            max-width: 650px;
             text-align: left;
             transition: opacity 0.3s ease;
             opacity: 0;
@@ -101,22 +120,25 @@
             opacity: 1;
         }
 
+        /* CARD STYLING */
         details.record-card {
-            background: #F3E5F5;
-            padding: 15px;
+            background: #1c1e2a;
+            padding: 20px;
             border-radius: 8px;
-            box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.05);
-            color: #4A148C;
-            margin-bottom: 15px;
+            border: 1px solid #2a2c3d;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            color: #d1d5db;
+            margin-bottom: 20px;
         }
 
         .record-summary {
             cursor: pointer;
-            font-weight: bold;
-            color: #6A1B9A;
+            font-weight: 600;
+            color: #ffffff;
             outline: none;
             list-style: none; 
             font-size: 16px;
+            padding: 5px 0;
         }
         
         .record-summary::-webkit-details-marker {
@@ -126,10 +148,11 @@
         .record-summary::before {
             content: '▶';
             display: inline-block;
-            margin-right: 10px;
-            font-size: 12px;
-            color: #9575CD;
+            margin-right: 12px;
+            font-size: 10px;
+            color: #ff0066;
             transition: transform 0.2s ease;
+            vertical-align: middle;
         }
 
         details[open] > .record-summary::before {
@@ -139,20 +162,20 @@
         .record-expanded-content {
             margin-top: 15px;
             padding-top: 15px;
-            border-top: 1px dashed #E1BEE7;
+            border-top: 1px solid #2a2c3d;
+            font-size: 14px;
         }
 
-        /* ARTWORK STYLES */
         .artwork-container {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .artwork-img {
             width: 100%;
-            max-width: 250px;
-            border-radius: 8px;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            max-width: 200px;
+            border-radius: 6px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
             animation: fadeIn 0.5s;
         }
 
@@ -162,47 +185,55 @@
         }
 
         .record-card p {
-            margin: 5px 0;
-            line-height: 1.4;
+            margin: 8px 0;
+            line-height: 1.5;
         }
 
         .record-card strong {
             display: inline-block;
             width: 160px;
-            color: #6A1B9A;
+            color: #9ca3af;
+            font-weight: 600;
+        }
+
+        a {
+            color: #ff0066;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        a:hover {
+            color: #ff4d94;
+            text-decoration: underline;
         }
 
         .label-link {
-            color: #7E57C2;
-            text-decoration: none;
-            font-weight: bold;
-            border-bottom: 1px dashed #7E57C2;
-            transition: color 0.2s, border-bottom 0.2s;
-        }
-
-        .label-link:hover {
-            color: #4A148C;
-            border-bottom: 1px solid #4A148C;
+            font-weight: 600;
         }
 
         .loading {
-            color: #9575CD;
+            color: #ff0066;
             font-style: italic;
             text-align: center;
-            margin-top: 10px;
+            margin-top: 20px;
+            font-weight: 600;
         }
         
         .results-header {
             text-align: center;
-            color: #4A148C;
+            color: #ffffff;
             font-size: 18px;
-            margin-bottom: 15px;
-            font-weight: bold;
+            margin-bottom: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
         }
 
         details.tracks-details {
             margin-top: 15px;
             padding-top: 10px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 6px;
+            padding: 10px;
         }
         
         .tracklist {
@@ -214,32 +245,36 @@
 
         .tracklist li {
             margin-bottom: 8px;
-            background: #EDE7F6;
-            padding: 8px 12px;
-            border-radius: 4px;
+            background: #252837;
+            padding: 10px 15px;
+            border-radius: 6px;
+            border-left: 3px solid #ff0066;
         }
 
         .tracklist-uri {
-            font-size: 14px;
-            color: #7E57C2;
+            font-size: 13px;
+            color: #9ca3af;
             word-break: break-all;
             display: block;
-            margin-top: 2px;
+            margin-top: 4px;
+            font-family: monospace;
         }
 
         hr {
             border: 0;
-            border-top: 1px solid #E1BEE7;
-            margin: 15px 0;
+            border-top: 1px solid #2a2c3d;
+            margin: 20px 0;
         }
 
     </style>
 </head>
 <body>
 
+    <img src="https://www.wmg.com/wp-content/uploads/2025/02/ADA-Logo.png" alt="ADA Logo" class="header-logo" id="headerLogo">
+
     <div class="search-wrapper" id="searchWrapper">
         <div class="pill-search">
-            <input type="text" id="upcInput" placeholder="Enter UPC..." onkeypress="handleKeyPress(event)">
+            <input type="text" id="upcInput" placeholder="What release are you looking for?" onkeypress="handleKeyPress(event)">
             <button class="search-icon-btn" onclick="searchUPC()">
                 <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </button>
@@ -309,7 +344,7 @@
                             
                             let html = '<hr>';
                             html += `<details class="tracks-details">`;
-                            html += `<summary class="record-summary" style="color: #4A148C;">View Apple Music Track IDs (${tracksData.length})</summary>`;
+                            html += `<summary class="record-summary">View Apple Music Track IDs (${tracksData.length})</summary>`;
                             html += '<ul class="tracklist">';
                             
                             tracksData.forEach(track => {
@@ -335,12 +370,12 @@
             resultDiv.classList.remove('visible');
 
             if (!upcVal) {
-                resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">Please enter a UPC.</p>';
+                resultDiv.innerHTML = '<p style="color:#ff3333; text-align:center; margin-top:20px;">Please enter a UPC.</p>';
                 resultDiv.classList.add('visible');
                 return;
             }
 
-            resultDiv.innerHTML = '<p class="loading">Searching database and fetching tracks...</p>';
+            resultDiv.innerHTML = '<p class="loading">Searching database...</p>';
             resultDiv.classList.add('visible');
 
             Promise.all([
@@ -355,17 +390,17 @@
                     resultDiv.innerHTML = buildRecordCard(record, true, tracksData);
                     checkAppleLiveStatus(record);
                 } else {
-                    resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">UPC not found in the MASTER database.</p>';
+                    resultDiv.innerHTML = '<p style="color:#ff3333; text-align:center; margin-top:20px;">UPC not found in the MASTER database.</p>';
                 }
             }).catch(err => {
-                resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">Error fetching data. Check sheet access.</p>';
+                resultDiv.innerHTML = '<p style="color:#ff3333; text-align:center; margin-top:20px;">Error fetching data. Check sheet access.</p>';
             });
         }
 
         function searchLabel(labelName) {
             const resultDiv = document.getElementById('result');
             
-            resultDiv.innerHTML = `<p class="loading">Finding all releases and tracks for ${labelName}...</p>`;
+            resultDiv.innerHTML = `<p class="loading">Finding all releases for ${labelName}...</p>`;
             triggerSearchAnimation();
 
             Promise.all([
@@ -376,7 +411,7 @@
                 resultDiv.innerHTML = '';
 
                 if (records.length > 0) {
-                    let html = `<div class="results-header">Upcoming Releases for ${labelName}</div>`;
+                    let html = `<div class="results-header">Releases for ${labelName}</div>`;
                     records.forEach(record => {
                         html += buildRecordCard(record, false, tracksData);
                     });
@@ -384,10 +419,10 @@
                     
                     records.forEach(record => checkAppleLiveStatus(record));
                 } else {
-                    resultDiv.innerHTML = `<p style="color:#B71C1C; text-align:center; margin-top:10px;">No other releases found for ${labelName}.</p>`;
+                    resultDiv.innerHTML = `<p style="color:#ff3333; text-align:center; margin-top:20px;">No other releases found for ${labelName}.</p>`;
                 }
             }).catch(err => {
-                resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">Error fetching data. Check sheet access.</p>';
+                resultDiv.innerHTML = '<p style="color:#ff3333; text-align:center; margin-top:20px;">Error fetching data. Check sheet access.</p>';
             });
         }
 
@@ -424,7 +459,6 @@
             if (record['Label']) {
                 let labelName = record['Label'].trim();
                 
-                // Map of labels to their specific Linkfire domain
                 const linkfireDomains = {
                     'When Stars Align': 'whenstarsalign.lnk.to',
                     'Silver Lining Music': 'SilverLining.lnk.to',
@@ -435,9 +469,7 @@
                 if (linkfireDomains[labelName]) {
                     let rawTitle = record['Title'] || '';
                     
-                    // Only generate the link if the title does NOT contain "Extended Mix"
                     if (!rawTitle.toLowerCase().includes('extended mix')) {
-                        // Strip out all spaces and non-alphanumeric characters
                         let safeTitlePath = rawTitle.replace(/[^a-zA-Z0-9]/g, '');
                         if (safeTitlePath) {
                             let baseDomain = linkfireDomains[labelName];
@@ -455,7 +487,7 @@
                     
                     html += '<hr>';
                     html += `<details class="tracks-details">`;
-                    html += `<summary class="record-summary" style="color: #4A148C;">View Spotify Track URIs (${albumTracks.length})</summary>`;
+                    html += `<summary class="record-summary">View Spotify Track URIs (${albumTracks.length})</summary>`;
                     html += '<ul class="tracklist">';
                     albumTracks.forEach(track => {
                         let trackNum = track['Track Number'] || '-';
@@ -463,69 +495,4 @@
                         let trackUri = track['Track URI'] || 'No URI available';
                         
                         html += `<li>
-                                    <strong>${trackNum}. ${trackTitle}</strong>
-                                    <span class="tracklist-uri">${trackUri}</span>
-                                 </li>`;
-                    });
-                    html += '</ul></details>';
-                }
-            }
-
-            // Placeholder for Apple Track IDs to be injected dynamically
-            html += `<div id="apple-tracks-${recordId}"></div>`;
-
-            html += '<hr>';
-
-            if (record['Spotify']) {
-                let spotifyUri = record['Spotify'];
-                let spotifyUrl = spotifyUri;
-                if (spotifyUri.startsWith('spotify:')) {
-                    spotifyUrl = spotifyUri.replace('spotify:', 'https://open.spotify.com/').replace(/:/g, '/');
-                }
-                html += `<p><strong>Spotify Album URI:</strong> ${spotifyUri}</p>`;
-                html += `<p><strong>Spotify:</strong> <a href="${spotifyUrl}" target="_blank">Pre-release link</a></p>`;
-            }
-
-            if (record['Apple']) {
-                let appleId = record['Apple'];
-                let appleUrl = appleId;
-                if (!appleId.startsWith('http')) {
-                    appleUrl = `https://music.apple.com/gb/album/${appleId}`;
-                } else {
-                    appleId = appleId.split('/').pop();
-                }
-                html += `<p><strong>Apple Album ID:</strong> ${appleId}</p>`;
-                html += `<p><strong>Apple:</strong> <a href="${appleUrl}" target="_blank">Pre-release link</a></p>`;
-            }
-
-            if (record['YouTube']) {
-                html += `<p><strong>YouTube:</strong> <a href="${record['YouTube']}" target="_blank">Pre-release link</a></p>`;
-            }
-
-            if (record['Amazon']) {
-                let amazonUrl = record['Amazon'];
-                let asin = "";
-                if (amazonUrl.includes('/dp/')) {
-                    asin = amazonUrl.split('/dp/')[1].split('/')[0];
-                } else {
-                    asin = amazonUrl.split('/').pop();
-                }
-                html += `<p><strong>Amazon Album ASIN:</strong> ${asin}</p>`;
-                html += `<p><strong>Amazon:</strong> <a href="${amazonUrl}" target="_blank">Pre-release link</a></p>`;
-            }
-
-            if (record['Beatport']) {
-                html += `<p><strong>Beatport:</strong> <a href="${record['Beatport']}" target="_blank">Pre-release link</a></p>`;
-            }
-
-            if (record['WARNINGS']) {
-                html += '<hr>'; 
-                html += `<p style="color:#B71C1C;"><strong>Warnings:</strong> ${record['WARNINGS']}</p>`;
-            }
-            
-            html += '</div></details>';
-            return html;
-        }
-    </script>
-</body>
-</html>
+                                    <strong style="color: #
