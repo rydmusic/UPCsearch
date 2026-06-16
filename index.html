@@ -277,7 +277,8 @@
             document.getElementById('searchWrapper').classList.add('active');
         }
 
-        function checkAppleArtwork(record) {
+        // UPDATED: Now fetches the album AND the tracks directly from Apple's API
+        function checkAppleLiveStatus(record) {
             if (!record['Apple']) return;
 
             let appleId = record['Apple'];
@@ -286,18 +287,49 @@
             }
 
             const upc = record['UPC'] || appleId;
-            const containerId = `artwork-${upc}`;
+            const artworkContainerId = `artwork-${upc}`;
+            const appleTracksContainerId = `apple-tracks-${upc}`;
             
-            fetch(`https://itunes.apple.com/lookup?id=${appleId}`)
+            // Adding '&entity=song' tells the API to bring back the album AND track list
+            fetch(`https://itunes.apple.com/lookup?id=${appleId}&entity=song`)
                 .then(res => res.json())
                 .then(data => {
-                    const container = document.getElementById(containerId);
-                    if (data.resultCount > 0 && container) {
-                        let artworkUrl = data.results[0].artworkUrl100.replace('100x100bb', '600x600bb');
-                        container.innerHTML = `<img src="${artworkUrl}" alt="Album Artwork" class="artwork-img">`;
+                    if (data.resultCount > 0) {
+                        // 1. Process Artwork (Wrapper Type: collection)
+                        const albumData = data.results.find(item => item.wrapperType === 'collection');
+                        const artworkContainer = document.getElementById(artworkContainerId);
+                        
+                        if (albumData && artworkContainer) {
+                            let artworkUrl = albumData.artworkUrl100.replace('100x100bb', '600x600bb');
+                            artworkContainer.innerHTML = `<img src="${artworkUrl}" alt="Album Artwork" class="artwork-img">`;
+                        }
+
+                        // 2. Process Track IDs (Wrapper Type: track)
+                        const tracksData = data.results.filter(item => item.wrapperType === 'track');
+                        const tracksContainer = document.getElementById(appleTracksContainerId);
+                        
+                        if (tracksData.length > 0 && tracksContainer) {
+                            // Sort by track number to be perfectly sequential
+                            tracksData.sort((a, b) => a.trackNumber - b.trackNumber);
+                            
+                            let html = '<hr>';
+                            html += `<details class="tracks-details">`;
+                            html += `<summary class="record-summary" style="color: #4A148C;">View Apple Music Track IDs (${tracksData.length})</summary>`;
+                            html += '<ul class="tracklist">';
+                            
+                            tracksData.forEach(track => {
+                                html += `<li>
+                                            <strong>${track.trackNumber}. ${track.trackName}</strong>
+                                            <span class="tracklist-uri">${track.trackId}</span>
+                                         </li>`;
+                            });
+                            
+                            html += '</ul></details>';
+                            tracksContainer.innerHTML = html;
+                        }
                     }
                 })
-                .catch(e => console.log('Artwork not found or release not live yet.', e));
+                .catch(e => console.log('Apple data not found or release not live yet.', e));
         }
 
         function searchUPC() {
@@ -326,7 +358,7 @@
                 if (record) {
                     triggerSearchAnimation();
                     resultDiv.innerHTML = buildRecordCard(record, true, tracksData);
-                    checkAppleArtwork(record);
+                    checkAppleLiveStatus(record);
                 } else {
                     resultDiv.innerHTML = '<p style="color:#B71C1C; text-align:center; margin-top:10px;">UPC not found in the MASTER database.</p>';
                 }
@@ -355,9 +387,8 @@
                     });
                     resultDiv.innerHTML = html;
                     
-                    records.forEach(record => checkAppleArtwork(record));
+                    records.forEach(record => checkAppleLiveStatus(record));
                 } else {
-                    // This is where the syntax error was! Fixed now.
                     resultDiv.innerHTML = `<p style="color:#B71C1C; text-align:center; margin-top:10px;">No other releases found for ${labelName}.</p>`;
                 }
             }).catch(err => {
@@ -373,12 +404,12 @@
             let artist = record['Artist'] || 'N/A';
             let title = record['Title'] || 'N/A';
             let appleId = record['Apple'] || '';
-            let artworkId = upc !== 'N/A' ? upc : appleId;
+            let recordId = upc !== 'N/A' ? upc : appleId;
             
             html += `<summary class="record-summary">${upc} / ${artist} / ${title}</summary>`;
             html += `<div class="record-expanded-content">`;
             
-            html += `<div id="artwork-${artworkId}" class="artwork-container"></div>`;
+            html += `<div id="artwork-${recordId}" class="artwork-container"></div>`;
             
             html += `<p><strong>UPC:</strong> ${upc}</p>`;
             html += `<p><strong>Artist:</strong> ${artist}</p>`;
@@ -416,6 +447,9 @@
                     html += '</ul></details>';
                 }
             }
+
+            // Placeholder for Apple Track IDs to be injected dynamically
+            html += `<div id="apple-tracks-${recordId}"></div>`;
 
             html += '<hr>';
 
